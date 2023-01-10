@@ -41,6 +41,15 @@ impl Vec3 {
     pub fn normalized(&self) -> Self {
         *self / self.magnitude()
     }
+
+    pub fn random_in_unit_sphere() -> Self {
+        loop {
+            let vector: Vec3 = rand::random();
+            if vector.magnitude_squared() < 1.0 {
+                return vector;
+            };
+        }
+    }
 }
 
 impl std::ops::Neg for Vec3 {
@@ -118,6 +127,13 @@ impl std::ops::Div<f64> for Vec3 {
 impl std::ops::DivAssign<f64> for Vec3 {
     fn div_assign(&mut self, rhs: f64) {
         *self *= 1.0 / rhs
+    }
+}
+
+impl rand::distributions::Distribution<Vec3> for rand::distributions::Standard {
+    fn sample<R: rand::Rng + ?Sized>(&self, rng: &mut R) -> Vec3 {
+        let (x, y, z): (f64, f64, f64) = rng.gen();
+        Vec3(x, y, z)
     }
 }
 
