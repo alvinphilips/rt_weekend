@@ -50,6 +50,14 @@ impl Vec3 {
             };
         }
     }
+
+    pub fn random_unit_vector() -> Self {
+        Self::random_in_unit_sphere().normalized()
+    }
+
+    pub fn reflect(v: &Vec3, normal: &Vec3) -> Vec3 {
+        *v - 2.0 * Self::dot(v, normal) * *normal
+    }
 }
 
 impl std::ops::Neg for Vec3 {

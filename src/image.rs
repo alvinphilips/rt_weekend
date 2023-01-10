@@ -41,9 +41,9 @@ impl Image {
                 let color = color * scale;
                 println!(
                     "{} {} {}",
-                    (256.0 * clamp(color.0, 0.0, 0.999)) as u8,
-                    (256.0 * clamp(color.1, 0.0, 0.999)) as u8,
-                    (256.0 * clamp(color.2, 0.0, 0.999)) as u8
+                    (256.0 * clamp(color.0.sqrt(), 0.0, 0.999)) as u8,
+                    (256.0 * clamp(color.1.sqrt(), 0.0, 0.999)) as u8,
+                    (256.0 * clamp(color.2.sqrt(), 0.0, 0.999)) as u8
                 );
             }
         }

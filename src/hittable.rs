@@ -1,14 +1,16 @@
-use std::fmt::Debug;
+use std::{fmt::Debug, rc::Rc};
 
 use crate::{
+    material::Material,
     ray::Ray,
     vec3::{Point3, Vec3},
 };
 
-#[derive(Debug, Default, Clone, Copy)]
+#[derive(Debug, Default, Clone)]
 pub struct HitRecord {
     pub point: Point3,
     pub normal: Vec3,
+    pub material: Option<Rc<dyn Material>>,
     pub t: f64,
     pub front_face: bool,
 }

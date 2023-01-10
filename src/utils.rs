@@ -1,6 +1,7 @@
 pub const PI: f64 = std::f64::consts::PI;
 pub const INFINITY: f64 = std::f64::INFINITY;
 pub const PI_FRAC_180: f64 = PI / 180.0;
+pub const NEAR_ZERO: f64 = 1e-15;
 
 /// Convert from degrees to radian.
 ///
