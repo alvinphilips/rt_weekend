@@ -5,12 +5,12 @@ use color::Color;
 use hittable::{HitRecord, Hittable};
 use hittable_list::HittableList;
 use image::Image;
-use material::{Lambertian, Metal};
+use material::*;
 use rand::Rng;
 use ray::Ray;
 use sphere::Sphere;
 use utils::INFINITY;
-use vec3::Point3;
+use vec3::{Point3, Vec3};
 
 mod camera;
 mod color;
@@ -46,7 +46,7 @@ fn ray_color(ray: &Ray, world: &dyn Hittable, depth: usize) -> Color {
     }
     let unit_direction = ray.direction.normalized();
     let t = 0.5 * (unit_direction.y() + 1.0);
-    (1.0 - t) * Color::default() + t * Color(0.5, 0.7, 1.0)
+    (1.0 - t) * Color(1.0, 1.0, 1.0) + t * Color(0.5, 0.7, 1.0)
 }
 
 fn main() {
@@ -58,34 +58,49 @@ fn main() {
     let mut world = HittableList::default();
 
     // Materials
-    let material_ground = Rc::new(Lambertian::new(&Color(0.8, 0.8, 0.0)));
-    let material_center = Rc::new(Lambertian::new(&Color(0.7, 0.3, 0.3)));
-    let material_left = Rc::new(Metal::new(&Color(0.8, 0.8, 0.8)));
-    let material_right = Rc::new(Metal::new(&Color(0.8, 0.6, 0.2)));
+    let material_ground: Rc<dyn Material> = Rc::new(Lambertian::new(&Color(0.8, 0.8, 0.0)));
+    let material_center: Rc<dyn Material> = Rc::new(Lambertian::new(&Color(0.1, 0.2, 0.5)));
+    let material_left: Rc<dyn Material> = Rc::new(Dielectric::new(1.5));
+    let material_right: Rc<dyn Material> = Rc::new(Metal::new(&Color(0.8, 0.6, 0.2), 0.0));
 
     world.add(Rc::new(Sphere::new(
         Point3(0.0, -100.5, -1.0),
         100.0,
-        material_ground,
+        Rc::clone(&material_ground),
     )));
     world.add(Rc::new(Sphere::new(
         Point3(0.0, 0.0, -1.0),
         0.5,
-        material_center,
+        Rc::clone(&material_center),
     )));
     world.add(Rc::new(Sphere::new(
         Point3(-1.0, 0.0, -1.0),
         0.5,
-        material_left,
+        Rc::clone(&material_left),
+    )));
+    world.add(Rc::new(Sphere::new(
+        Point3(-1.0, 0.0, -1.0),
+        -0.45,
+        Rc::clone(&material_left),
     )));
     world.add(Rc::new(Sphere::new(
         Point3(1.0, 0.0, -1.0),
         0.5,
-        material_right,
+        Rc::clone(&material_right),
     )));
 
-    // Camera
-    let camera = Camera::default();
+    let look_from = Point3(3.0, 3.0, 2.0);
+    let look_at = Point3(0.0, 0.0, -1.0);
+
+    let camera = Camera::new(
+        look_from,
+        look_at,
+        Vec3::UP,
+        20.0,
+        ASPECT_RATIO,
+        2.0,
+        (look_from - look_at).magnitude(),
+    );
 
     // Render
     for y in 0..image.height {

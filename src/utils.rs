@@ -19,3 +19,13 @@ pub fn clamp<T: std::cmp::PartialOrd>(value: T, min: T, max: T) -> T {
     }
     value
 }
+
+pub fn map_01<
+    T: std::ops::Add<Output = T> + std::ops::Sub<Output = T> + std::ops::Mul<f64, Output = T> + Copy,
+>(
+    value: f64,
+    min: T,
+    max: T,
+) -> T {
+    min + (max - min) * value
+}

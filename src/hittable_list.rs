@@ -8,12 +8,12 @@ pub struct HittableList {
 }
 
 impl HittableList {
-    pub fn new(object: Rc<dyn Hittable>) -> Self {
+    pub fn _new(object: Rc<dyn Hittable>) -> Self {
         Self {
             objects: vec![object],
         }
     }
-    pub fn clear(&mut self) {
+    pub fn _clear(&mut self) {
         self.objects.clear();
     }
     pub fn add(&mut self, object: Rc<dyn Hittable>) {

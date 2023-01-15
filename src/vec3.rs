@@ -26,15 +26,15 @@ impl Vec3 {
         self.0 * self.0 + self.1 * self.1 + self.2 * self.2
     }
 
-    pub fn dot(u: &Vec3, v: &Vec3) -> f64 {
-        u.0 * v.0 + u.1 * v.1 + u.2 * v.2
+    pub fn dot(&self, other: &Vec3) -> f64 {
+        self.0 * other.0 + self.1 * other.1 + self.2 * other.2
     }
 
-    pub fn cross(u: &Vec3, v: &Vec3) -> Self {
+    pub fn cross(&self, other: &Vec3) -> Self {
         Vec3(
-            u.1 * v.2 - u.2 * v.1,
-            u.2 * v.0 - u.0 * v.2,
-            u.0 * v.1 - u.1 * v.0,
+            self.1 * other.2 - self.2 * other.1,
+            self.2 * other.0 - self.0 * other.2,
+            self.0 * other.1 - self.1 * other.0,
         )
     }
 
@@ -42,22 +42,58 @@ impl Vec3 {
         *self / self.magnitude()
     }
 
-    pub fn random_in_unit_sphere() -> Self {
+    pub fn random_range(min: f64, max: f64) -> Vec3 {
+        let (x, y, z): (f64, f64, f64) = rand::random();
+        Vec3(
+            map_01(x, min, max),
+            map_01(y, min, max),
+            map_01(z, min, max),
+        )
+    }
+
+    pub fn random_in_unit_sphere() -> Vec3 {
         loop {
-            let vector: Vec3 = rand::random();
+            let vector = Vec3::random_range(-1.0, 1.0);
             if vector.magnitude_squared() < 1.0 {
                 return vector;
             };
         }
     }
 
-    pub fn random_unit_vector() -> Self {
+    pub fn random_in_unit_disk() -> Vec3 {
+        loop {
+            let (x, y): (f64, f64) = rand::random();
+            let x = map_01(x, -1.0, 1.0);
+            let y = map_01(y, -1.0, 1.0);
+            let vector = Vec3(x, y, 0.0);
+            if vector.magnitude_squared() < 1.0 {
+                return vector;
+            };
+        }
+    }
+
+    pub fn random_unit_vector() -> Vec3 {
         Self::random_in_unit_sphere().normalized()
     }
 
-    pub fn reflect(v: &Vec3, normal: &Vec3) -> Vec3 {
-        *v - 2.0 * Self::dot(v, normal) * *normal
+    pub fn reflect(&self, normal: &Vec3) -> Vec3 {
+        *self - 2.0 * self.dot(normal) * *normal
     }
+
+    pub fn refract(uv: &Vec3, normal: &Vec3, etai_over_etat: f64) -> Self {
+        let uv = *uv;
+        let normal = *normal;
+        let cos_theta = f64::min(Vec3::dot(&(-uv), &normal), 1.0);
+        let ray_out_perpendicular = etai_over_etat * (uv + cos_theta * normal);
+        let ray_out_parallel =
+            -f64::sqrt(f64::abs(1.0 - ray_out_perpendicular.magnitude_squared())) * normal;
+
+        ray_out_perpendicular + ray_out_parallel
+    }
+
+    pub const RIGHT: Vec3 = Vec3(1.0, 0.0, 0.0);
+    pub const UP: Vec3 = Vec3(0.0, 1.0, 0.0);
+    pub const FORWARD: Vec3 = Vec3(0.0, 0.0, 1.0);
 }
 
 impl std::ops::Neg for Vec3 {
@@ -146,3 +182,5 @@ impl rand::distributions::Distribution<Vec3> for rand::distributions::Standard {
 }
 
 pub use Vec3 as Point3;
+
+use crate::utils::map_01;

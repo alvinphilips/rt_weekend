@@ -18,7 +18,7 @@ impl Sphere {
         Self {
             center,
             radius,
-            material,
+            material: Rc::clone(&material),
         }
     }
 }
