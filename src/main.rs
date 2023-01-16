@@ -23,10 +23,10 @@ mod sphere;
 mod utils;
 mod vec3;
 
-const ASPECT_RATIO: f64 = 16.0 / 9.0;
-const IMAGE_WIDTH: usize = 400;
+const ASPECT_RATIO: f64 = 3.0 / 2.0;
+const IMAGE_WIDTH: usize = 100;
 const IMAGE_HEIGHT: usize = (IMAGE_WIDTH as f64 / ASPECT_RATIO) as usize;
-const SAMPLES_PER_PIXEL: usize = 100;
+const SAMPLES_PER_PIXEL: usize = 500;
 const MAX_DEPTH: usize = 50;
 
 fn ray_color(ray: &Ray, world: &dyn Hittable, depth: usize) -> Color {
@@ -58,49 +58,58 @@ fn main() {
     let mut world = HittableList::default();
 
     // Materials
-    let material_ground: Rc<dyn Material> = Rc::new(Lambertian::new(&Color(0.8, 0.8, 0.0)));
-    let material_center: Rc<dyn Material> = Rc::new(Lambertian::new(&Color(0.1, 0.2, 0.5)));
-    let material_left: Rc<dyn Material> = Rc::new(Dielectric::new(1.5));
-    let material_right: Rc<dyn Material> = Rc::new(Metal::new(&Color(0.8, 0.6, 0.2), 0.0));
-
+    let material_ground: Rc<dyn Material> = Rc::new(Lambertian::new(&Color(0.5, 0.5, 0.5)));
     world.add(Rc::new(Sphere::new(
-        Point3(0.0, -100.5, -1.0),
-        100.0,
-        Rc::clone(&material_ground),
-    )));
-    world.add(Rc::new(Sphere::new(
-        Point3(0.0, 0.0, -1.0),
-        0.5,
-        Rc::clone(&material_center),
-    )));
-    world.add(Rc::new(Sphere::new(
-        Point3(-1.0, 0.0, -1.0),
-        0.5,
-        Rc::clone(&material_left),
-    )));
-    world.add(Rc::new(Sphere::new(
-        Point3(-1.0, 0.0, -1.0),
-        -0.45,
-        Rc::clone(&material_left),
-    )));
-    world.add(Rc::new(Sphere::new(
-        Point3(1.0, 0.0, -1.0),
-        0.5,
-        Rc::clone(&material_right),
+        Point3(0.0, -1000.0, 0.0),
+        1000.0,
+        material_ground,
     )));
 
-    let look_from = Point3(3.0, 3.0, 2.0);
-    let look_at = Point3(0.0, 0.0, -1.0);
+    for a in -11..11 {
+        for b in -11..11 {
+            let choose_mat: u8 = rng.gen();
+            let center = Point3(
+                a as f64 + 0.9 * rng.gen::<f64>(),
+                0.2,
+                b as f64 + 0.9 * rng.gen::<f64>(),
+            );
 
-    let camera = Camera::new(
-        look_from,
-        look_at,
-        Vec3::UP,
-        20.0,
-        ASPECT_RATIO,
-        2.0,
-        (look_from - look_at).magnitude(),
-    );
+            if (center - Point3(4.0, 0.2, 0.0)).magnitude() > 0.9 {
+                let material_sphere: Rc<dyn Material> = match choose_mat {
+                    0..=205 => {
+                        let (color_1, color_2): (Color, Color) = rng.gen();
+                        let albedo: Color = color_1 * color_2;
+                        Rc::new(Lambertian::new(&albedo))
+                    }
+                    206..=243 => {
+                        let albedo = Vec3::random_range(0.5, 1.0);
+                        let fuzz = rng.gen::<f64>() / 2.0;
+                        Rc::new(Metal::new(&albedo, fuzz))
+                    }
+                    _ => Rc::new(Dielectric::new(1.5)),
+                };
+
+                world.add(Rc::new(Sphere::new(center, 0.2, material_sphere)));
+            }
+        }
+    }
+
+    let material_1: Rc<dyn Material> = Rc::new(Dielectric::new(1.5));
+    let material_2: Rc<dyn Material> = Rc::new(Lambertian::new(&Color(0.4, 0.2, 0.1)));
+    let material_3: Rc<dyn Material> = Rc::new(Metal::new(&Color(0.7, 0.6, 0.5), 0.0));
+
+    world.add(Rc::new(Sphere::new(Point3(0.0, 1.0, 0.0), 1.0, material_1)));
+    world.add(Rc::new(Sphere::new(
+        Point3(-4.0, 1.0, 0.0),
+        1.0,
+        material_2,
+    )));
+    world.add(Rc::new(Sphere::new(Point3(4.0, 1.0, 0.0), 1.0, material_3)));
+
+    let look_from = Point3(13.0, 2.0, 3.0);
+    let look_at = Point3(0.0, 0.0, 0.0);
+
+    let camera = Camera::new(look_from, look_at, Vec3::UP, 20.0, ASPECT_RATIO, 0.1, 10.0);
 
     // Render
     for y in 0..image.height {
