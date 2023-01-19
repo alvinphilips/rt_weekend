@@ -1,5 +1,5 @@
 use rayon::prelude::*;
-use std::sync::Arc;
+use std::{sync::Arc, time::Instant};
 
 use camera::Camera;
 use color::Color;
@@ -48,10 +48,26 @@ fn ray_color(ray: &Ray, world: &dyn Hittable, depth: usize) -> Color {
     (1.0 - t) * Color(1.0, 1.0, 1.0) + t * Color(0.5, 0.7, 1.0)
 }
 
+struct Timer(Instant);
+
+impl Timer {
+    fn log(&self, message: &str) {
+        eprintln!("[{:.02?}] - {message}", self.0.elapsed());
+    }
+}
+
 fn main() {
+    let timer = Timer(Instant::now());
+    timer.log("Initializing Image");
+    // Image
+    // let mut image = Image::new(IMAGE_WIDTH, IMAGE_HEIGHT);
+    timer.log("Done.");
+
     // World
     let mut rng = rand::thread_rng();
     let mut world = HittableList::default();
+
+    timer.log("Setting up World");
 
     // Materials
     let material_ground = Arc::new(Lambertian::new(&Color(0.5, 0.5, 0.5)));
