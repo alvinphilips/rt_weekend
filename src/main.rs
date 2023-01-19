@@ -126,10 +126,14 @@ fn main() {
         material_3,
     )));
 
+    timer.log("Setting up Camera");
+
     let look_from = Point3(13.0, 2.0, 3.0);
     let look_at = Point3(0.0, 0.0, 0.0);
 
     let camera = Camera::new(look_from, look_at, Vec3::UP, 20.0, ASPECT_RATIO, 0.1, 10.0);
+
+    timer.log("Start Rendering Image");
 
     let scale = 1.0 / SAMPLES_PER_PIXEL as f64;
 
