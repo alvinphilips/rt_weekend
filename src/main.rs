@@ -1,4 +1,5 @@
-use std::rc::Rc;
+use rayon::prelude::*;
+use std::{rc::Rc, sync::Arc};
 
 use camera::Camera;
 use color::Color;
@@ -26,7 +27,7 @@ mod vec3;
 const ASPECT_RATIO: f64 = 3.0 / 2.0;
 const IMAGE_WIDTH: usize = 100;
 const IMAGE_HEIGHT: usize = (IMAGE_WIDTH as f64 / ASPECT_RATIO) as usize;
-const SAMPLES_PER_PIXEL: usize = 500;
+const SAMPLES_PER_PIXEL: usize = 512;
 const MAX_DEPTH: usize = 50;
 
 fn ray_color(ray: &Ray, world: &dyn Hittable, depth: usize) -> Color {
@@ -58,8 +59,8 @@ fn main() {
     let mut world = HittableList::default();
 
     // Materials
-    let material_ground: Rc<dyn Material> = Rc::new(Lambertian::new(&Color(0.5, 0.5, 0.5)));
-    world.add(Rc::new(Sphere::new(
+    let material_ground = Arc::new(Lambertian::new(&Color(0.5, 0.5, 0.5)));
+    world.add(Arc::new(Sphere::new(
         Point3(0.0, -1000.0, 0.0),
         1000.0,
         material_ground,
@@ -75,55 +76,82 @@ fn main() {
             );
 
             if (center - Point3(4.0, 0.2, 0.0)).magnitude() > 0.9 {
-                let material_sphere: Rc<dyn Material> = match choose_mat {
+                let material_sphere: Arc<dyn Material> = match choose_mat {
                     0..=205 => {
                         let (color_1, color_2): (Color, Color) = rng.gen();
                         let albedo: Color = color_1 * color_2;
-                        Rc::new(Lambertian::new(&albedo))
+                        Arc::new(Lambertian::new(&albedo))
                     }
                     206..=243 => {
                         let albedo = Vec3::random_range(0.5, 1.0);
                         let fuzz = rng.gen::<f64>() / 2.0;
-                        Rc::new(Metal::new(&albedo, fuzz))
+                        Arc::new(Metal::new(&albedo, fuzz))
                     }
-                    _ => Rc::new(Dielectric::new(1.5)),
+                    _ => Arc::new(Dielectric::new(1.5)),
                 };
 
-                world.add(Rc::new(Sphere::new(center, 0.2, material_sphere)));
+                world.add(Arc::new(Sphere::new(center, 0.2, material_sphere)));
             }
         }
     }
 
-    let material_1: Rc<dyn Material> = Rc::new(Dielectric::new(1.5));
-    let material_2: Rc<dyn Material> = Rc::new(Lambertian::new(&Color(0.4, 0.2, 0.1)));
-    let material_3: Rc<dyn Material> = Rc::new(Metal::new(&Color(0.7, 0.6, 0.5), 0.0));
+    let material_1: Arc<dyn Material> = Arc::new(Dielectric::new(1.5));
+    let material_2: Arc<dyn Material> = Arc::new(Lambertian::new(&Color(0.4, 0.2, 0.1)));
+    let material_3: Arc<dyn Material> = Arc::new(Metal::new(&Color(0.7, 0.6, 0.5), 0.0));
 
-    world.add(Rc::new(Sphere::new(Point3(0.0, 1.0, 0.0), 1.0, material_1)));
-    world.add(Rc::new(Sphere::new(
+    world.add(Arc::new(Sphere::new(
+        Point3(0.0, 1.0, 0.0),
+        1.0,
+        material_1,
+    )));
+    world.add(Arc::new(Sphere::new(
         Point3(-4.0, 1.0, 0.0),
         1.0,
         material_2,
     )));
-    world.add(Rc::new(Sphere::new(Point3(4.0, 1.0, 0.0), 1.0, material_3)));
+    world.add(Arc::new(Sphere::new(
+        Point3(4.0, 1.0, 0.0),
+        1.0,
+        material_3,
+    )));
 
     let look_from = Point3(13.0, 2.0, 3.0);
     let look_at = Point3(0.0, 0.0, 0.0);
 
     let camera = Camera::new(look_from, look_at, Vec3::UP, 20.0, ASPECT_RATIO, 0.1, 10.0);
 
-    // Render
-    for y in 0..image.height {
-        for x in 0..image.width {
-            let mut pixel_color = Color::default();
-            for _sample in 0..SAMPLES_PER_PIXEL {
-                let u = (x as f64 + rng.gen::<f64>()) / (image.width - 1) as f64;
-                let v = (y as f64 + rng.gen::<f64>()) / (image.height - 1) as f64;
-                let ray = camera.get_ray(u, v);
-                pixel_color += ray_color(&ray, &world, MAX_DEPTH);
-            }
-            image.set_pixel(pixel_color, x, y);
-        }
-    }
+    let image = (0..IMAGE_HEIGHT).into_par_iter().for_each(|y| {
+        let mut offsets = [0f64; SAMPLES_PER_PIXEL * 2];
+        rand::thread_rng().fill(&mut offsets);
 
-    image.print_ppm(SAMPLES_PER_PIXEL);
+        let mut row = Vec::with_capacity(image.width);
+        for x in 0..image.width {
+            let pixel_color: Color = (0..SAMPLES_PER_PIXEL)
+                .map(|sample| {
+                    let u = (x as f64 + offsets[2 * sample]) / (image.width - 1) as f64;
+                    let v = (y as f64 + offsets[2 * sample + 1]) / (image.height - 1) as f64;
+                    let ray = camera.get_ray(u, v);
+                    ray_color(&ray, &world, MAX_DEPTH)
+                })
+                .reduce(|accum, item| accum + item)
+                .unwrap();
+            row.push(pixel_color);
+        }
+        row;
+    });
+    // Render
+    // for y in 0..image.height {
+    //     for x in 0..image.width {
+    //         let mut pixel_color = Color::default();
+    //         for _sample in 0..SAMPLES_PER_PIXEL {
+    //             let u = (x as f64 + rng.gen::<f64>()) / (image.width - 1) as f64;
+    //             let v = (y as f64 + rng.gen::<f64>()) / (image.height - 1) as f64;
+    //             let ray = camera.get_ray(u, v);
+    //             pixel_color += ray_color(&ray, &world, MAX_DEPTH);
+    //         }
+    //         image.set_pixel(pixel_color, x, y);
+    //     }
+    // }
+
+    // image.print_ppm(SAMPLES_PER_PIXEL);
 }
