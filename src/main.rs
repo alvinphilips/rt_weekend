@@ -23,9 +23,9 @@ mod utils;
 mod vec3;
 
 const ASPECT_RATIO: f64 = 3.0 / 2.0;
-const IMAGE_WIDTH: usize = 400;
+const IMAGE_WIDTH: usize = 1200;
 const IMAGE_HEIGHT: usize = (IMAGE_WIDTH as f64 / ASPECT_RATIO) as usize;
-const SAMPLES_PER_PIXEL: usize = 32;
+const SAMPLES_PER_PIXEL: usize = 512;
 const MAX_DEPTH: usize = 50;
 
 fn ray_color(ray: &Ray, world: &dyn Hittable, depth: usize) -> Color {
@@ -119,7 +119,7 @@ fn main() {
 
     println!("P3\n{} {}\n255", IMAGE_WIDTH, IMAGE_HEIGHT);
 
-    let image = (0..IMAGE_HEIGHT)
+    let image: Vec<Vec3> = (0..IMAGE_HEIGHT)
         .into_par_iter()
         .map(|y| {
             let mut offsets = [0f64; SAMPLES_PER_PIXEL * 2];
@@ -142,15 +142,14 @@ fn main() {
                 .collect();
             row
         })
-        .collect::<Vec<Vec<Vec3>>>()
-        .iter()
         .flatten()
-        .for_each(|color| {
-            println!(
-                "{} {} {}",
-                (256.0 * utils::clamp(color.0.sqrt(), 0.0, 0.999)) as u8,
-                (256.0 * utils::clamp(color.1.sqrt(), 0.0, 0.999)) as u8,
-                (256.0 * utils::clamp(color.2.sqrt(), 0.0, 0.999)) as u8
-            );
-        });
+        .collect();
+    for pixel in image {
+        println!(
+            "{} {} {}",
+            (256.0 * utils::clamp(pixel.0.sqrt(), 0.0, 0.999)) as u8,
+            (256.0 * utils::clamp(pixel.1.sqrt(), 0.0, 0.999)) as u8,
+            (256.0 * utils::clamp(pixel.2.sqrt(), 0.0, 0.999)) as u8
+        );
+    }
 }
