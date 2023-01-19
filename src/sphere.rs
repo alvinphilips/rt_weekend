@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::{fmt::Debug, sync::Arc};
 
 use crate::{
     hittable::{HitRecord, Hittable},
@@ -10,15 +10,24 @@ use crate::{
 pub struct Sphere {
     center: Point3,
     radius: f64,
-    material: Rc<dyn Material>,
+    material: Arc<dyn Material + Send + Sync>,
+}
+
+impl Debug for Sphere {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Sphere")
+            .field("center", &self.center)
+            .field("radius", &self.radius)
+            .finish()
+    }
 }
 
 impl Sphere {
-    pub fn new(center: Point3, radius: f64, material: Rc<dyn Material>) -> Self {
+    pub fn new(center: Point3, radius: f64, material: Arc<dyn Material + Send + Sync>) -> Self {
         Self {
             center,
             radius,
-            material: Rc::clone(&material),
+            material: Arc::clone(&material),
         }
     }
 }
@@ -50,7 +59,7 @@ impl Hittable for Sphere {
         record.point = ray.at(record.t);
         let outward_normal = (record.point - self.center) / self.radius;
         record.set_face_normal(ray, &outward_normal);
-        record.material = Some(Rc::clone(&self.material));
+        record.material = Some(Arc::clone(&self.material));
 
         true
     }

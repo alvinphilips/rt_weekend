@@ -35,7 +35,6 @@ impl Image {
         let scale = 1.0 / samples_per_pixel as f64;
         println!("P3\n{} {}\n255", self.width, self.height);
         for y in (0..self.height).rev() {
-            eprintln!("\rScanlines remaining: {}", y);
             for x in 0..self.width {
                 let color = self.data[y * self.width + x];
                 let color = color * scale;
@@ -47,6 +46,5 @@ impl Image {
                 );
             }
         }
-        eprintln!("\nDone.\n");
     }
 }
