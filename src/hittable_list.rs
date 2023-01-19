@@ -4,14 +4,14 @@ use crate::hittable::{HitRecord, Hittable};
 
 #[derive(Default)]
 pub struct HittableList {
-    objects: Vec<Arc<dyn Hittable + Sync>>,
+    objects: Vec<Arc<dyn Hittable + Send + Sync>>,
 }
 
 impl HittableList {
     pub fn _clear(&mut self) {
         self.objects.clear();
     }
-    pub fn add(&mut self, object: Arc<dyn Hittable + Sync>) {
+    pub fn add(&mut self, object: Arc<dyn Hittable + Send + Sync>) {
         self.objects.push(object);
     }
 }
